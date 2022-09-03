@@ -1,0 +1,71 @@
+<html>
+
+<body>
+	<script>
+		//WE FIRST SEARCH PRODUCTS THAT have tag 'Amazon'
+		const site = "https://momentousliving.com.au";
+		const search_fields = "tag";
+		const search_value = "Amazon";
+
+		fetch(site +
+				"/search/suggest.json?q=bag&resources[type]=product&resources[options][unavailable_products]=show&resources[options][fields]=" +
+				search_fields + "&q=" + search_value, {
+					method: 'GET',
+					mode: 'no-cors',
+					headers: {
+						"Content-Type": "application/json",
+						"Access-Control-Allow-Origin": "*",
+						"Access-Control-Allow-Credentials": true
+					},
+				})
+			.then((response) => response.json())
+			.then((suggestions) => {
+				const productFound = suggestions.resources.results.products || [];
+				if (productFound.length > 0) {
+					productFound.forEach(p => {
+						//WE THEN GET FULL PRODUCT 
+						fetch(site + "/products/" + p.handle + ".json")
+							.then((response) => response.json())
+							.then((product) => {
+								//you got a product object from Shopify Ajax API, now you need to list MOSAIC_Shipping values in console (node or browser)...
+								fetch(site +
+										"/apps/spreadsheet_product_manager/mf.php?token=gt07089_dfht&id=" +
+										product.id)
+									.then(r => r.json())
+									.then(function (data) {
+										if (data.meta) {
+
+											for (let item_id in data.meta) {
+												if (data.meta.hasOwnProperty(item_id)) {
+													data.meta[item_id].filter(mk => mk.key ==
+															"MOSAIC_Shipping")
+														.forEach(m => {
+															if (item_id == product.id) {
+																console.log("Product '" + product
+																	.title +
+																	"' MOSAIC_Shipping value: " +
+																	m.value);
+															} else {
+																let varinat = product.variants.filter(
+																	v => v.id == item_id)[0];
+																if (varinat) {
+																	console.log("Product '" + product
+																		.title + ", Variant '" + (
+																			varinat.sku || "") +
+																		"' MOSAIC_Shipping value: " +
+																		m.value);
+																}
+															}
+														})
+												}
+											}
+										}
+									})
+							})
+					})
+				}
+			})
+	</script>
+</body>
+
+</html>
